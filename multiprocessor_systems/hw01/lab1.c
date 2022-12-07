@@ -44,21 +44,30 @@ float intrinsics_operations(const float* vec1, const float* vec2, size_t n)
 }
 
 float gcc_vector_extensions(const float* vec1, const float* vec2, size_t n)
-{   
+{  
+    typedef int v8si __attribute__ ((vector_size(32)));	
     typedef float v8sa __attribute__ ((vector_size(32)));
     size_t i, j;
     float sum = 0;
     v8sa results = {0, 0, 0, 0, 0, 0, 0, 0};
-    v8sa mask = {1, 2, 3, 4, 5, 6, 7, 0};
+    v8sa tmp_res;
+    v8si mask1 = {1, 0, 3, 2, 5, 4, 7, 6};
+    v8si mask2 = {2, 2, 0, 0, 6, 6, 4, 4};
+    v8si mask3 = {4, 4, 4, 4, 0, 0, 0, 0};
     for(i = 0 ; i < n; i += 8)
     {
         v8sa vector1 = {vec1[i], vec1[i+1], vec1[i+2], vec1[i+3], vec1[i+4], vec1[i+5], vec1[i+6], vec1[i+7]};
         v8sa vector2 = {vec2[i], vec2[i+1], vec2[i+2], vec2[i+3], vec2[i+4], vec2[i+5], vec2[i+6], vec2[i+7]};
         results += vector1 * vector2;
     }
-    for (i = 0; i < 8; i++)
-        sum += results[i];
-    return sum;
+    tmp_res = __builtin_shuffle(results, mask1);
+    results += tmp_res;
+    tmp_res = __builtin_shuffle(results, mask2);
+    results += tmp_res;
+    tmp_res = __builtin_shuffle(results, mask3);
+    results += tmp_res;
+
+    return results[0];
 }
 
 int main(int argc, char **argv)
