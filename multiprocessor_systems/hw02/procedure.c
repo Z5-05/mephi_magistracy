@@ -1,56 +1,35 @@
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
-#include <x86intrin.h>
 
-#pragma intrinsic(__rdtsc)
+double procedure_programming(double*, double*, size_t);
 
-float* vec1;
-float* vec2;
-size_t n;
-
-u_int64_t rdtsc()
-{
-     return __rdtsc();
-}
-
-float procedure_programming(const float* vec1, const float* vec2, size_t n)
-{
-    float sum = 0;
-    for (size_t i = 0; i < n; ++i)
-        sum += vec1[i] * vec2[i];
-    return sum;
-}
 
 int main(int argc, char **argv)
 {
-    size_t i;
+    double* vec1;
+    double* vec2;
+    size_t n, i;
+    double result;
+    clock_t time_begin, time_end;
+
     if (argc < 2)
         exit(1);
     n = atoi(argv[1]);
-    float result;
-
-    vec1 = (float*)malloc(n * sizeof(float));
-    vec2 = (float*)malloc(n * sizeof(float));
     
-    for (i = 0; i < n; ++i)
-    {
-        *(vec1 + i) = 0;
-        *(vec2 + i) = 0;
-    }
+    vec1 = (double*)malloc(n * sizeof(double));
+    vec2 = (double*)malloc(n * sizeof(double));
         
     for (i = 0; i < n; ++i)
     {
-        vec1[i] = i + 1;
-        vec2[i] = i + 1;
+        vec1[i] = (i + 1) % 100;
+        vec2[i] = (i + 1) % 100;
     }
 
-    clock_t time_begin = clock();
-    u_int64_t tick_begin = rdtsc();
+    time_begin = clock();
     result = procedure_programming(vec1, vec2, n);
-    u_int64_t tick_end = rdtsc();
-    clock_t time_end = clock();
-    printf("Array size = %ld, result of procedure = %.2f, ticks = %ld, time (ms) = %f\n", n, result, tick_end-tick_begin, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
+    time_end = clock();
+    printf("Array size = %ld, result of procedure = %.2f, time (ms) = %f\n", n, result, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
     
     free(vec1);
     vec1 = NULL;
@@ -58,3 +37,11 @@ int main(int argc, char **argv)
     vec2 = NULL;
     return 0;
     }
+
+double procedure_programming(double* vec1, double* vec2, size_t n)
+{
+    double sum = 0;
+    for (size_t i = 0; i < n; ++i)
+        sum += vec1[i] * vec2[i];
+    return sum;
+}

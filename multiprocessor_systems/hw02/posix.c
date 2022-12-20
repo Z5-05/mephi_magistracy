@@ -1,90 +1,49 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
-#include <x86intrin.h>
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define N_THREADS 4  
 
-#pragma intrinsic(__rdtsc)
-
-float* vec1;
-float* vec2;
-size_t n;
-float* partial_sum;
+double parallel_posix(double*, double*, size_t);
 void *dot_function_for_posix(void *ptr);
 
-
-u_int64_t rdtsc()
+typedef struct Variables
 {
-     return __rdtsc();
-}
-
-float parallel_posix(const float* vec1, const float* vec2, size_t n)
-{
-   pthread_t thread_id[n];
-   size_t i;
-   float result = 0;
-
-   for(i=0; i < n; ++i)
-   {    
-      size_t* p;
-      p = malloc(sizeof(size_t));
-      *p = i;
-      pthread_create( &thread_id[i], NULL, dot_function_for_posix, p );
-   }
-
-   for(i=0; i < n; ++i)
-   {
-      pthread_join( thread_id[i], NULL); 
-   }
-   for(i=0; i < n; ++i)
-        result += partial_sum[i];
-   return result;
-}
-
-void *dot_function_for_posix(void *arg)
-{
-    size_t idx = *(size_t*)arg;
-    free(arg);
-    arg = NULL;
-
-    partial_sum[idx] = vec1[idx] * vec2[idx];
-    return (NULL);
-};
+    size_t idx;
+    size_t sub_size;
+    double result;
+    double* vec1;
+    double* vec2;
+    size_t n;
+} variables;
 
 int main(int argc, char **argv)
 {   
-    size_t n;
-    size_t i;
+    double* vec1;
+    double* vec2;
+    size_t n, i;
+    double result;
+    clock_t time_begin, time_end;
+
     if (argc < 2)
         exit(1);
     
     n = atoi(argv[1]);
-    float result;
-    u_int64_t tick;
 
-    vec1 = (float*)malloc(n * sizeof(float));
-    vec2 = (float*)malloc(n * sizeof(float));
-    partial_sum = (float*)malloc(n * sizeof(float));
-    
-    
-    for (i = 0; i < n; ++i)
-    {
-        *(vec1 + i) = 0;
-        *(vec2 + i) = 0;
-    }
-    
+    vec1 = (double*)malloc(n * sizeof(double));
+    vec2 = (double*)malloc(n * sizeof(double));
         
     for (i = 0; i < n; ++i)
     {
-        vec1[i] = i + 1;
-        vec2[i] = i + 1;
+        vec1[i] = (i + 1) % 100;
+        vec2[i] = (i + 1) % 100;
     }
 
-    clock_t time_begin = clock();
-    u_int64_t tick_begin = rdtsc();
+    time_begin = clock();
     result = parallel_posix(vec1, vec2, n);
-    u_int64_t tick_end = rdtsc();
-    clock_t time_end = clock();
-    printf("Array size = %ld, result of procedure = %.2f, ticks = %ld, time (ms) = %f\n", n, result, tick_end-tick_begin, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
+    time_end = clock();
+    printf("Array size = %ld, result of posix = %.2f, time (ms) = %f\n", n, result, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
     
     free(vec1);
     vec1 = NULL;
@@ -92,3 +51,44 @@ int main(int argc, char **argv)
     vec2 = NULL;
     return 0;
     }
+
+double parallel_posix(double* vec1, double* vec2, size_t n)
+{
+   pthread_t thread_id[N_THREADS];
+   variables array_ptr[N_THREADS];
+   size_t i;
+   double result;
+   result = 0;
+
+   for(i=0; i < N_THREADS; ++i)
+   {    
+      array_ptr[i].idx = i;
+      array_ptr[i].result = 0;
+      array_ptr[i].sub_size = n/N_THREADS + 1;
+      array_ptr[i].vec1 = vec1;
+      array_ptr[i].vec2 = vec2;
+      array_ptr[i].n = n;
+      pthread_create( &thread_id[i], NULL, dot_function_for_posix, &array_ptr[i]);
+   }
+
+   for(i=0; i < N_THREADS; ++i)
+   {
+      pthread_join(thread_id[i], NULL); 
+   }
+   for(i=0; i < N_THREADS; ++i)
+        result += array_ptr[i].result;
+   return result;
+}
+
+void *dot_function_for_posix(void *arg)
+{   
+    size_t i;
+    variables* ptr;
+    ptr = (variables*)arg;
+
+    double result = 0;
+    for (i=ptr->idx * ptr->sub_size; i < MIN(ptr->n, (ptr->idx + 1)*ptr->sub_size); ++i)
+        result += ptr->vec1[i] * ptr->vec2[i];
+    ptr->result = result;
+    return (NULL);
+}
