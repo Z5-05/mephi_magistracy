@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "functional": "c",
-        "random": "c",
-        "chrono": "cpp"
-    }
-}
