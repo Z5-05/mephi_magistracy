@@ -12,7 +12,9 @@ TOTAL=$(( $END - $START ))
 
 for (( var=$START; var<=$END; var++ ))
 do
-	(./procedure $var; ./posix $var; ./openmp $var)  >> logger.txt
+	./procedure $var >> logger.txt
+    ./posix $var >> logger.txt
+    ./openmp $var >> logger.txt
     echo $var
 done | tqdm --total $TOTAL >> /dev/null
 

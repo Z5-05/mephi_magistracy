@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <tchar.h>
+#include <time.h>
 #include <strsafe.h>
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define N_THREADS 4
@@ -7,6 +8,7 @@
 DWORD WINAPI MyThreadFunction( LPVOID lpParam );
 void ErrorHandler(LPCTSTR lpszFunction);
 double parallel_win32(double*, double*, size_t);
+void process(size_t n, FILE* fptr);
 
 typedef struct Variables
 {
@@ -18,18 +20,27 @@ typedef struct Variables
     size_t n;
 } VARIABLES, *PVARIABLES;
 
-int main(int argc, char **argv)
+int _tmain()
+{
+    size_t i, start_idx, finish_idx;
+    FILE *fptr;
+
+    fptr = fopen("logger_win32.txt","w");
+    start_idx = 1000000;
+    finish_idx = 1002000;
+
+    for (i = start_idx; i < finish_idx; ++i)
+        process(i, fptr);
+    fclose(fptr);
+        
+}
+void process(size_t n, FILE* fptr)
 {   
     double* vec1;
     double* vec2;
-    size_t n, i;
+    size_t i;
     double result;
     clock_t time_begin, time_end;
-
-    if (argc < 2)
-        exit(1);
-    
-    n = atoi(argv[1]);
 
     vec1 = (double*)malloc(n * sizeof(double));
     vec2 = (double*)malloc(n * sizeof(double));
@@ -39,40 +50,38 @@ int main(int argc, char **argv)
         vec1[i] = (i + 1) % 100;
         vec2[i] = (i + 1) % 100;
     }
-
     time_begin = clock();
     result = parallel_win32(vec1, vec2, n);
     time_end = clock();
-    printf("Array size = %ld, result of posix = %.2f, time (ms) = %f\n", n, result, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
-    
+    fprintf(fptr, "Array size = %ld, result of win32 = %.2f, time (ms) = %f\n", n, result, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
     free(vec1);
     vec1 = NULL;
     free(vec2);
     vec2 = NULL;
-    return 0;
     }
 
 
 double parallel_win32(double* vec1, double* vec2, size_t n)
 {
+    size_t i;
+    double results;
     PVARIABLES pDataArray[N_THREADS];
     DWORD   dwThreadIdArray[N_THREADS];
     HANDLE  hThreadArray[N_THREADS]; 
-
+     
     for( int i=0; i<N_THREADS; i++ )
     {
-        pDataArray[i] = (pvariable) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-                sizeof(pvariable));
-
+        pDataArray[i] = (PVARIABLES) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+                sizeof(PVARIABLES));
+        
         if(pDataArray[i] == NULL)
             ExitProcess(2);
-
-        pDataArray[i].idx = i;
-        pDataArray[i].result = 0;
-        pDataArray[i].sub_size = n/N_THREADS + 1;
-        pDataArray[i].vec1 = vec1;
-        pDataArray[i].vec2 = vec2;
-        pDataArray[i].n = n;
+        pDataArray[i]->idx = i;
+        pDataArray[i]->result = 0;
+        pDataArray[i]->sub_size = n/N_THREADS + 1;
+        pDataArray[i]->vec1 = vec1;
+        pDataArray[i]->vec2 = vec2;
+        pDataArray[i]->n = n;
 
         hThreadArray[i] = CreateThread( 
             NULL,
@@ -88,9 +97,10 @@ double parallel_win32(double* vec1, double* vec2, size_t n)
            ExitProcess(3);
         }
     }
-
     WaitForMultipleObjects(N_THREADS, hThreadArray, TRUE, INFINITE);
-
+    for(i=0; i < N_THREADS; ++i)
+        results += pDataArray[i]->result;
+   return results;
     for(int i=0; i<N_THREADS; i++)
     {
         CloseHandle(hThreadArray[i]);
@@ -100,22 +110,20 @@ double parallel_win32(double* vec1, double* vec2, size_t n)
             pDataArray[i] = NULL;   
         }
     }
-
-    for(i=0; i < N_THREADS; ++i)
-        result += array_ptr[i].result;
-   return result;
+   
 }
 
 DWORD WINAPI MyThreadFunction( LPVOID lpParam ) 
 { 
+    size_t i;
     HANDLE hStdout;
     PVARIABLES pDataArray;
     pDataArray = (PVARIABLES)lpParam;
 
     double result = 0;
-    for (i=ptr->idx * ptr->sub_size; i < MIN(ptr->n, (ptr->idx + 1)*ptr->sub_size); ++i)
-        result += ptr->vec1[i] * ptr->vec2[i];
-    ptr->result = result;
+    for (i=pDataArray->idx * pDataArray->sub_size; i < MIN(pDataArray->n, (pDataArray->idx + 1)*pDataArray->sub_size); ++i)
+        result += pDataArray->vec1[i] * pDataArray->vec2[i];
+    pDataArray->result = result;
 
     return 0; 
 } 
