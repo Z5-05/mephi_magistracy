@@ -1,8 +1,8 @@
 #!/bin/bash
 
-gcc -O0 procedure.c -o procedure
-gcc -pthread -O0 posix.c -o posix
-gcc -fopenmp -O0 openmp.c -o openmp
+g++ -O0 procedure.cpp -o procedure
+g++ -pthread -O0 posix.cpp -o posix
+g++ -fopenmp -O0 openmp.cpp -o openmp
 
 > logger.txt
 

@@ -1,14 +1,15 @@
 #include <windows.h>
 #include <tchar.h>
-#include <time.h>
 #include <strsafe.h>
+#include <fstream>
+#include <chrono>
+using namespace std;
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define N_THREADS 4
 
 DWORD WINAPI MyThreadFunction( LPVOID lpParam );
 void ErrorHandler(LPCTSTR lpszFunction);
 double parallel_win32(double*, double*, size_t);
-void process(size_t n, FILE* fptr);
 
 typedef struct Variables
 {
@@ -27,7 +28,8 @@ int _tmain(int argc, char **argv)
     size_t n;
     size_t i;
     double result;
-    clock_t time_begin, time_end;
+    chrono::steady_clock::time_point time_end;
+    chrono::steady_clock::time_point time_begin;
 
     if (argc < 2)
         exit(1);
@@ -41,10 +43,10 @@ int _tmain(int argc, char **argv)
         vec1[i] = (i + 1) % 100;
         vec2[i] = (i + 1) % 100;
     }
-    time_begin = clock();
+    time_begin = chrono::steady_clock::now();
     result = parallel_win32(vec1, vec2, n);
-    time_end = clock();
-    printf("Array size = %ld, result of win32 = %.2f, time (ms) = %f\n", n, result, (double)(time_end - time_begin) / CLOCKS_PER_SEC);
+    time_end = chrono::steady_clock::now();
+    printf("Array size = %ld, result of win32 = %.2f, time (ms) = %llu\n", n, result, chrono::duration_cast<chrono::nanoseconds>(time_end - time_begin).count());
     free(vec1);
     vec1 = NULL;
     free(vec2);
