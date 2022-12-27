@@ -1,0 +1,3 @@
+Array size = 1000000, result of procedure = 3283500000.00, time (ms) = 2983000
+Array size = 1000000, result of posix = 3283500000.00, time (ms) = 8153000
+Array size = 1000000, result of openmp = 3283500000.00, time (ms) = 6486000

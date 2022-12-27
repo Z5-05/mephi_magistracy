@@ -1,21 +1,24 @@
 #!/bin/bash
 
-g++ -O0 procedure.cpp -o procedure
-g++ -pthread -O0 posix.cpp -o posix
-g++ -fopenmp -O0 openmp.cpp -o openmp
+g++ -o procedure procedure.cpp
+g++ -fopenmp -o openmp openmp.cpp
+g++ -pthread -o posix posix.cpp
 
 > logger.txt
 
-START=1000000
-END=1002000
-TOTAL=$(( $END - $START ))
-
-for (( var=$START; var<=$END; var++ ))
+for var in `seq 1000000 1 1000200`
 do
 	./procedure $var >> logger.txt
-    ./posix $var >> logger.txt
-    ./openmp $var >> logger.txt
-    echo $var
-done | tqdm --total $TOTAL >> /dev/null
+done
+
+for var in `seq 1000000 1 1000200`
+do
+	./posix $var >> logger.txt
+done
+
+for var in `seq 1000000 1 1000200`
+do
+	./openmp $var >> logger.txt
+done
 
 rm procedure posix openmp

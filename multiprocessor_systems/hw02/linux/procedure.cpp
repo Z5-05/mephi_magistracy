@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     time_begin = chrono::steady_clock::now();
     result = procedure_programming(vec1, vec2, n);
     time_end = chrono::steady_clock::now();
-    printf("Array size = %ld, result of procedure = %.2f, time (ms) = %llu\n", n, result, chrono::duration_cast<chrono::nanoseconds>(time_end - time_begin).count());
+    printf("Array size = %ld, result of procedure = %.2f, time (ms) = %lu\n", n, result, chrono::duration_cast<chrono::nanoseconds>(time_end - time_begin).count());
     
     free(vec1);
     vec1 = NULL;

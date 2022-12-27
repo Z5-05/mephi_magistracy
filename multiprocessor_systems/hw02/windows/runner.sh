@@ -1,10 +1,11 @@
-g++ -O0 win32.cpp -o win32
+#!/bin/bash
 
+g++ -O0 -o win32 win32.cpp 
 > logger_win32.txt
 
-for var in {100000..120000}
+for var in `seq 1000000 1 1000200`
 do
 	./win32 $var >> logger_win32.txt
 done
 
-rm win32.exe
+rm win32

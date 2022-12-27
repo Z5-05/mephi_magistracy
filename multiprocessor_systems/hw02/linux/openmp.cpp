@@ -1,8 +1,6 @@
 #include <omp.h>
-#include <windows.h>
-#include <tchar.h>
-#include <strsafe.h>
-#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
 #include <chrono>
 using namespace std;
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -37,10 +35,10 @@ int main(int argc, char **argv)
     time_begin = chrono::steady_clock::now();
     result = parallel_openmp(vec1, vec2, n);
     time_end = chrono::steady_clock::now();
-    printf("Array size = %ld, result of openmp = %.2f, time (ms) = %llu\n", n, result, chrono::duration_cast<chrono::nanoseconds>(time_end - time_begin).count());
-    free(vec1);
+    printf("Array size = %ld, result of openmp = %.2f, time (ms) = %lu\n", n, result, chrono::duration_cast<chrono::nanoseconds>(time_end - time_begin).count());
+    delete vec1;
     vec1 = NULL;
-    free(vec2);
+    delete vec2;
     vec2 = NULL;
     return 0;
     }
